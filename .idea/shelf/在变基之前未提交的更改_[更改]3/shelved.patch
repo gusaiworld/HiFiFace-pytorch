@@ -1,0 +1,11 @@
+Index: AdaptiveWingLoss/aux.py
+===================================================================
+diff --git a/AdaptiveWingLoss/aux.py b/AdaptiveWingLoss/aux.py
+deleted file mode 100644
+--- a/AdaptiveWingLoss/aux.py	(revision 0e50b25909b5910e9327d3cb44eeb054f1c047d9)
++++ /dev/null	(revision 0e50b25909b5910e9327d3cb44eeb054f1c047d9)
+@@ -1,4 +0,0 @@
+-def detect_landmarks(inputs, model_ft):
+-    outputs, _ = model_ft(inputs)
+-    pred_heatmap = outputs[-1][:, :-1, :, :]
+-    return pred_heatmap[:, 96, :, :], pred_heatmap[:, 97, :, :]

@@ -1,0 +1,74 @@
+Index: 1.sh
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/1.sh b/1.sh
+new file mode 100644
+--- /dev/null	
++++ b/1.sh	
+@@ -0,0 +1,3 @@
++#!/bin/bash
++python app.py -m "/data/guyf/1/hififace/checkpoints" -i 320000
++#python 1.py -m "/data/guyf/1/hififace/checkpoints" -i 320000
+\ No newline at end of file
+Index: inference.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/inference.py b/inference.py
+new file mode 100644
+--- /dev/null	
++++ b/inference.py	
+@@ -0,0 +1,50 @@
++from typing import Optional
++
++import cv2
++import numpy as np
++import torch
++
++from configs.train_config import TrainConfig
++from models.model import HifiFace
++
++
++def inference(source_face: str, target_face: str, model_path: str, model_idx: Optional[int], swapped_face: str):
++    opt = TrainConfig()
++    opt.use_ddp = False
++
++    device = 'cpu'#"cuda" if torch.cuda.is_available() else "cpu"
++    checkpoint = (model_path, model_idx)
++    model = HifiFace(opt.identity_extractor_config, is_training=False, device=device, load_checkpoint=checkpoint)
++    model.eval()
++
++    src = cv2.cvtColor(cv2.imread(source_face), cv2.COLOR_BGR2RGB)
++    src = cv2.resize(src, (256, 256))
++    src = src.transpose(2, 0, 1)
++    src = torch.from_numpy(src).unsqueeze(0).to(device).float()
++    src = src / 255.0
++
++    tgt = cv2.cvtColor(cv2.imread(target_face), cv2.COLOR_BGR2RGB)
++    tgt = cv2.resize(tgt, (256, 256))
++    tgt = tgt.transpose(2, 0, 1)
++    tgt = torch.from_numpy(tgt).unsqueeze(0).to(device).float()
++    tgt = tgt / 255.0
++
++    with torch.no_grad():
++        result_face = model.forward(src.to(device), tgt.to(device))#.cpu()
++        print("Result face type:", type(result_face))  # 检查类型
++        print("Result face shape:", result_face.shape if isinstance(result_face, torch.Tensor) else "Not a Tensor")
++        result_face = torch.clamp(result_face, 0, 1) * 255
++    result_face = result_face.numpy()[0].astype(np.uint8)
++    result_face = result_face.transpose(1, 2, 0)
++
++    result_face = cv2.cvtColor(result_face, cv2.COLOR_BGR2RGB)
++    cv2.imwrite(swapped_face, result_face)
++
++
++if __name__ == "__main__":
++    source_face = "/data/guyf/1/hififace/assets/inference_samples/01_source.png"
++    target_face = "/data/guyf/1/hififace/assets/inference_samples/01_target.png"
++    model_path ='/data/guyf/1/hififace/checkpoints'# "/data/checkpoints/hififace/baseline_1k_ddp_with_cyc_1681278017147"
++    model_idx = 320000
++    swapped_face = "/data/guyf/1/hififace/assets/inference_samples/01.png"
++    inference(source_face, target_face, model_path, model_idx, swapped_face)
